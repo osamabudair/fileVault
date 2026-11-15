@@ -1,6 +1,8 @@
 package com.filevault.dto;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -31,4 +33,13 @@ public class RegisterRequest {
         message = "Password must be at least 8 characters and include an uppercase letter, lowercase letter, number, and special symbol"
     )
     private String password;
+
+    @NotBlank(message = "Confirm password is required")
+    private String confirmPassword;
+
+    @JsonIgnore
+    @AssertTrue(message = "Passwords do not match")
+    public boolean isPasswordsMatching() {
+        return password != null && password.equals(confirmPassword);
+    }
 }

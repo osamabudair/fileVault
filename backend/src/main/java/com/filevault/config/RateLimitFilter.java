@@ -33,7 +33,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
         if (isRateLimitedAuthEndpoint(path) && "POST".equalsIgnoreCase(request.getMethod())) {
-            String clientIp = extractClientIp(request);
+            String clientIp = request.getRemoteAddr();
             if (!allowRequest(clientIp)) {
                 response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
                 response.setContentType(MediaType.APPLICATION_JSON_VALUE);
@@ -53,22 +53,19 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private boolean allowRequest(String clientIp) {
         long now = Instant.now().getEpochSecond();
+        if (clientBuckets.size() > 10000) {
+            clientBuckets.entrySet().removeIf(
+                entry -> now - entry.getValue().windowStartEpochSec() >= WINDOW_DURATION_SECONDS
+            );
+        }
         RateWindow window = clientBuckets.compute(clientIp, (ip, existing) -> {
-            if (existing == null || now - existing.windowStartEpochSec >= WINDOW_DURATION_SECONDS) {
+            if (existing == null || now - existing.windowStartEpochSec() >= WINDOW_DURATION_SECONDS) {
                 return new RateWindow(now, new AtomicInteger(1));
             }
-            existing.counter.incrementAndGet();
+            existing.counter().incrementAndGet();
             return existing;
         });
-        return window.counter.get() <= MAX_REQUESTS_PER_MINUTE;
-    }
-
-    private String extractClientIp(HttpServletRequest request) {
-        String forwardedFor = request.getHeader("X-Forwarded-For");
-        if (forwardedFor != null && !forwardedFor.isBlank()) {
-            return forwardedFor.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
+        return window.counter().get() <= MAX_REQUESTS_PER_MINUTE;
     }
 
     private record RateWindow(long windowStartEpochSec, AtomicInteger counter) {}

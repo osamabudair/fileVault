@@ -65,7 +65,7 @@ public class AuthService {
         return issueTokensForUser(user);
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = BadCredentialsException.class)
     public AuthResult refreshToken(String rawRefreshToken) {
         if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
             throw new BadCredentialsException("Refresh token is missing.");
@@ -74,10 +74,16 @@ public class AuthService {
         RefreshToken storedToken = refreshTokenRepository.findByToken(rawRefreshToken)
             .orElseThrow(() -> new BadCredentialsException("Invalid refresh token."));
 
-        if (storedToken.isRevoked() || storedToken.getExpiryDate().isBefore(Instant.now())) {
+        if (storedToken.isRevoked()) {
+            // Token reuse detected: revoke/delete all refresh tokens for this user immediately
+            refreshTokenRepository.deleteByUser(storedToken.getUser());
+            throw new BadCredentialsException("Compromised refresh token detected. All sessions have been revoked.");
+        }
+
+        if (storedToken.getExpiryDate().isBefore(Instant.now())) {
             storedToken.setRevoked(true);
             refreshTokenRepository.save(storedToken);
-            throw new BadCredentialsException("Refresh token has expired or been revoked.");
+            throw new BadCredentialsException("Refresh token has expired.");
         }
 
         // Rotate refresh token

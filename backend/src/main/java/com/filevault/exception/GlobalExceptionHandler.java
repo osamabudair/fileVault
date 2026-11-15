@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -20,7 +21,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleValidationErrors(MethodArgumentNotValidException ex) {
         Map<String, String> fieldErrors = new LinkedHashMap<>();
         for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
-            fieldErrors.putIfAbsent(fieldError.getField(), fieldError.getDefaultMessage());
+            String fieldName = "passwordsMatching".equals(fieldError.getField())
+                ? "confirmPassword"
+                : fieldError.getField();
+            fieldErrors.putIfAbsent(fieldName, fieldError.getDefaultMessage());
+        }
+        for (ObjectError globalError : ex.getBindingResult().getGlobalErrors()) {
+            fieldErrors.putIfAbsent(globalError.getObjectName(), globalError.getDefaultMessage());
         }
 
         String primaryMessage = fieldErrors.values().stream()
