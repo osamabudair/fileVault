@@ -14,3 +14,11 @@ backend/*.war
 .idea/
 *.DS_Store
 *.log
+
+# Environment & Secret Configuration Files
+.env
+.env.*
+backend/.env
+backend/src/main/resources/application-local.properties
+backend/src/main/resources/application-dev.properties
+backend/src/main/resources/application-secret.properties
