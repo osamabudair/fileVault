@@ -2,15 +2,17 @@ import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Input } from '../common/Input';
 import { Button } from '../common/Button';
-import { User, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { PasswordStrengthIndicator } from './PasswordStrengthIndicator';
+import { User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
-export const RegisterForm = () => {
+export const RegisterForm = ({ onSwitchMode }) => {
   const { register } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -68,24 +70,30 @@ export const RegisterForm = () => {
         required
       />
 
-      <Input
-        label="Password"
-        type={showPassword ? 'text' : 'password'}
-        placeholder="••••••••••••"
-        icon={Lock}
-        trailingIcon={showPassword ? EyeOff : Eye}
-        onTrailingClick={() => setShowPassword(!showPassword)}
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        autoComplete="new-password"
-        required
-      />
+      <div>
+        <Input
+          label="Password"
+          type={showPassword ? 'text' : 'password'}
+          placeholder="••••••••••••"
+          icon={Lock}
+          trailingIcon={showPassword ? EyeOff : Eye}
+          onTrailingClick={() => setShowPassword(!showPassword)}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="new-password"
+          required
+        />
+        {/* Real-time Password Strength Meter */}
+        <PasswordStrengthIndicator password={password} />
+      </div>
 
       <Input
         label="Confirm Password"
-        type={showPassword ? 'text' : 'password'}
+        type={showConfirmPassword ? 'text' : 'password'}
         placeholder="••••••••••••"
         icon={Lock}
+        trailingIcon={showConfirmPassword ? EyeOff : Eye}
+        onTrailingClick={() => setShowConfirmPassword(!showConfirmPassword)}
         value={confirmPassword}
         onChange={(e) => setConfirmPassword(e.target.value)}
         autoComplete="new-password"
@@ -104,12 +112,24 @@ export const RegisterForm = () => {
           variant="primary"
           size="lg"
           loading={loading}
-          icon={ArrowRight}
-          iconPosition="right"
-          className="w-full text-xs"
+          className="w-full text-xs text-center justify-center"
         >
           Create Account
         </Button>
+      </div>
+
+      {/* Switch to Sign In */}
+      <div className="pt-2 text-center">
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          Already have an account?{' '}
+          <button
+            type="button"
+            onClick={onSwitchMode}
+            className="font-medium text-[#721C24] dark:text-[#9F2D3B] hover:underline cursor-pointer ml-1 inline-block"
+          >
+            Sign In
+          </button>
+        </p>
       </div>
     </form>
   );

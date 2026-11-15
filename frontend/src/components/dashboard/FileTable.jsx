@@ -13,7 +13,8 @@ import {
   Trash2, 
   Star, 
   RotateCcw,
-  Users
+  Users,
+  Eye
 } from 'lucide-react';
 
 function getCategoryIcon(category) {
@@ -36,6 +37,7 @@ export const FileTable = ({ files }) => {
     downloadFile, 
     setShareModalFile, 
     setDeleteModalFile, 
+    setPreviewModalFile,
     toggleFavorite, 
     restoreFile,
     activeTab 
@@ -44,7 +46,7 @@ export const FileTable = ({ files }) => {
   const isTrash = activeTab === 'trash';
 
   return (
-    <div className="w-full overflow-x-auto rounded-2xl bg-white/75 dark:bg-[#181B20]/70 backdrop-blur-md border border-white/60 dark:border-white/[0.08] shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.37)]">
+    <div className="w-full overflow-x-auto rounded-2xl bg-white dark:bg-[#181B20] border border-black/[0.06] dark:border-white/[0.08] shadow-xs">
       <table className="w-full text-left border-collapse text-xs">
         <thead>
           <tr className="border-b border-black/[0.05] dark:border-white/[0.06] text-zinc-400 dark:text-zinc-500 font-medium select-none">
@@ -74,6 +76,11 @@ export const FileTable = ({ files }) => {
                 ]
               : [
                   {
+                    label: 'Preview',
+                    icon: Eye,
+                    onClick: () => setPreviewModalFile(file)
+                  },
+                  {
                     label: 'Download',
                     icon: Download,
                     onClick: () => downloadFile(file)
@@ -100,7 +107,7 @@ export const FileTable = ({ files }) => {
             return (
               <tr
                 key={file.id}
-                className="group hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors"
+                className="group hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors duration-75"
               >
                 {/* Name & Star */}
                 <td className="py-3 px-4">
@@ -108,22 +115,28 @@ export const FileTable = ({ files }) => {
                     {!isTrash && (
                       <button
                         onClick={() => toggleFavorite(file.id)}
-                        className={`text-zinc-300 dark:text-zinc-600 hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer shrink-0 ${
-                          file.isFavorite ? 'text-amber-500 dark:text-amber-400' : 'opacity-0 group-hover:opacity-100'
+                        className={`transition-colors cursor-pointer shrink-0 ${
+                          file.isFavorite
+                            ? 'text-[#721C24] dark:text-[#9F2D3B]'
+                            : 'text-zinc-300 dark:text-zinc-600 hover:text-[#721C24] dark:hover:text-[#9F2D3B] opacity-0 group-hover:opacity-100'
                         }`}
+                        title={file.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
                       >
                         <Star className="w-3.5 h-3.5 fill-current" />
                       </button>
                     )}
 
-                    <div className="w-7 h-7 rounded-lg bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06] flex items-center justify-center shrink-0">
+                    <div 
+                      onClick={() => !isTrash && setPreviewModalFile(file)}
+                      className="w-7 h-7 rounded-lg bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06] flex items-center justify-center shrink-0 cursor-pointer"
+                    >
                       {getCategoryIcon(file.category)}
                     </div>
 
                     <span
-                      onClick={() => !isTrash && downloadFile(file)}
+                      onClick={() => !isTrash && setPreviewModalFile(file)}
                       className="font-medium text-zinc-800 dark:text-zinc-200 hover:text-[#721C24] dark:hover:text-[#9F2D3B] truncate cursor-pointer"
-                      title={file.name}
+                      title={`Preview "${file.name}"`}
                     >
                       {file.name}
                     </span>
@@ -167,11 +180,11 @@ export const FileTable = ({ files }) => {
                   <div className="flex items-center justify-end gap-1">
                     {!isTrash && (
                       <button
-                        onClick={() => downloadFile(file)}
-                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-all cursor-pointer"
-                        title="Download file"
+                        onClick={() => setPreviewModalFile(file)}
+                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-opacity cursor-pointer"
+                        title="Preview file"
                       >
-                        <Download className="w-3.5 h-3.5" />
+                        <Eye className="w-3.5 h-3.5" />
                       </button>
                     )}
 

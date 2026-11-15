@@ -21,7 +21,7 @@ export const Input = forwardRef(({
 
       <div className="relative flex items-center">
         {Icon && (
-          <div className="absolute left-3 flex items-center pointer-events-none text-zinc-400 dark:text-zinc-500">
+          <div className="absolute left-3 flex items-center pointer-events-none text-zinc-500 dark:text-zinc-400">
             <Icon className="w-4 h-4" />
           </div>
         )}
@@ -29,8 +29,8 @@ export const Input = forwardRef(({
         <input
           ref={ref}
           type={type}
-          className={`w-full h-9 rounded-xl bg-white/60 focus:bg-white/95 dark:bg-white/[0.04] dark:focus:bg-[#181B20] border text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 backdrop-blur-xs transition-colors duration-150 outline-none
-            ${Icon ? 'pl-9' : 'pl-3.5'}
+          className={`w-full h-9 rounded-xl bg-white/70 focus:bg-white dark:bg-white/[0.04] dark:focus:bg-[#181B20] border text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 transition-colors duration-150 outline-none
+            ${Icon ? 'pl-8.5' : 'pl-3.5'}
             ${TrailingIcon ? 'pr-9' : 'pr-3.5'}
             ${error
               ? 'border-red-500/60 focus:border-red-500 ring-1 ring-red-500/20'

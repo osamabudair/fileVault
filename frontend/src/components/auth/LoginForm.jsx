@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Input } from '../common/Input';
 import { Button } from '../common/Button';
-import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
-export const LoginForm = () => {
+export const LoginForm = ({ onSwitchMode }) => {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -72,12 +72,24 @@ export const LoginForm = () => {
           variant="primary"
           size="lg"
           loading={loading}
-          icon={ArrowRight}
-          iconPosition="right"
-          className="w-full text-xs"
+          className="w-full text-xs text-center justify-center"
         >
           Sign In
         </Button>
+      </div>
+
+      {/* Switch to Sign Up */}
+      <div className="pt-2 text-center">
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          Don&apos;t have an account?{' '}
+          <button
+            type="button"
+            onClick={onSwitchMode}
+            className="font-medium text-[#721C24] dark:text-[#9F2D3B] hover:underline cursor-pointer ml-1 inline-block"
+          >
+            Sign Up
+          </button>
+        </p>
       </div>
     </form>
   );

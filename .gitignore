@@ -1,0 +1,16 @@
+# Frontend ignores
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Backend (Java / Spring Boot) ignores
+backend/target/
+backend/.mvn/
+backend/*.jar
+backend/*.war
+
+# IDE & OS files
+.vscode/
+.idea/
+*.DS_Store
+*.log

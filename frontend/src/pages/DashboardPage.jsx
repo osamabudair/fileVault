@@ -6,6 +6,7 @@ import { FileTable } from '../components/dashboard/FileTable';
 import { FileCard } from '../components/dashboard/FileCard';
 import { ShareModal } from '../components/dashboard/ShareModal';
 import { DeleteModal } from '../components/dashboard/DeleteModal';
+import { FilePreviewModal } from '../components/dashboard/FilePreviewModal';
 import { SearchX, CheckCircle, Info, AlertCircle } from 'lucide-react';
 import { Button } from '../components/common/Button';
 
@@ -43,15 +44,15 @@ export const DashboardPage = () => {
   };
 
   return (
-    <div className="flex h-screen w-full bg-[#EBECEF] dark:bg-[#0F1115] text-zinc-900 dark:text-zinc-100 overflow-hidden font-sans transition-colors duration-150">
-      {/* Frosted Glass Sidebar */}
+    <div className="flex h-screen w-full bg-[#EBECEF] dark:bg-[#0F1115] text-zinc-900 dark:text-zinc-100 overflow-hidden font-sans">
+      {/* Sidebar: Fixed, full height */}
       <Sidebar />
 
-      {/* Main Workspace Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+      {/* Main Workspace Column: Navbar on top, main scrolls smoothly */}
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         <Navbar />
 
-        <main className="flex-1 p-6 space-y-5 max-w-7xl w-full mx-auto">
+        <main className="flex-1 overflow-y-auto p-6 space-y-5 max-w-7xl w-full mx-auto">
           {/* Header row: title and category filter pills */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
@@ -63,7 +64,7 @@ export const DashboardPage = () => {
               </p>
             </div>
 
-            {/* Category Filter Pills (Light Glass Tags) */}
+            {/* Category Filter Pills */}
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
               {categories.map((cat) => {
                 const isSelected = selectedCategory === cat.id;
@@ -71,10 +72,10 @@ export const DashboardPage = () => {
                   <button
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.id)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors duration-150 cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors duration-100 cursor-pointer ${
                       isSelected
                         ? 'bg-[#721C24] dark:bg-[#9F2D3B] text-white shadow-xs'
-                        : 'bg-white/60 dark:bg-white/[0.04] text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-white/80 dark:hover:bg-white/[0.08] border border-white/60 dark:border-white/[0.06]'
+                        : 'bg-white dark:bg-white/[0.04] text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-white/80 dark:hover:bg-white/[0.08] border border-black/[0.06] dark:border-white/[0.06]'
                     }`}
                   >
                     {cat.label}
@@ -99,7 +100,7 @@ export const DashboardPage = () => {
               </div>
             )
           ) : (
-            <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl bg-white/40 dark:bg-white/[0.02] border border-black/[0.05] dark:border-white/[0.05] space-y-3">
+            <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl bg-white dark:bg-[#181B20] border border-black/[0.05] dark:border-white/[0.05] space-y-3">
               <div className="w-10 h-10 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center text-zinc-400">
                 <SearchX className="w-5 h-5" />
               </div>
@@ -131,12 +132,13 @@ export const DashboardPage = () => {
       </div>
 
       {/* Frosted Dialogs */}
+      <FilePreviewModal />
       <ShareModal />
       <DeleteModal />
 
       {/* Minimal Toast Feedback */}
       {toast && (
-        <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/90 dark:bg-[#181B20]/90 backdrop-blur-md border border-white/60 dark:border-white/[0.08] text-xs text-zinc-800 dark:text-zinc-200 shadow-xl animate-in fade-in duration-150">
+        <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/95 dark:bg-[#181B20]/95 border border-black/10 dark:border-white/[0.08] text-xs text-zinc-800 dark:text-zinc-200 shadow-xl animate-in fade-in duration-100">
           {toast.type === 'success' && <CheckCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />}
           {toast.type === 'warning' && <AlertCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />}
           {toast.type === 'info' && <Info className="w-3.5 h-3.5 text-zinc-500 shrink-0" />}

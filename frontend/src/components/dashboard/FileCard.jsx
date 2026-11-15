@@ -14,7 +14,8 @@ import {
   Trash2, 
   Star, 
   RotateCcw,
-  Users
+  Users,
+  Eye
 } from 'lucide-react';
 
 function getCategoryIcon(category) {
@@ -37,6 +38,7 @@ export const FileCard = ({ file }) => {
     downloadFile, 
     setShareModalFile, 
     setDeleteModalFile, 
+    setPreviewModalFile,
     toggleFavorite, 
     restoreFile,
     activeTab 
@@ -59,6 +61,11 @@ export const FileCard = ({ file }) => {
         }
       ]
     : [
+        {
+          label: 'Preview',
+          icon: Eye,
+          onClick: () => setPreviewModalFile(file)
+        },
         {
           label: 'Download',
           icon: Download,
@@ -87,7 +94,10 @@ export const FileCard = ({ file }) => {
     <GlassCard className="p-4 flex flex-col justify-between group hoverEffect">
       {/* Top row */}
       <div className="flex items-start justify-between">
-        <div className="w-9 h-9 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06] flex items-center justify-center">
+        <div 
+          onClick={() => !isTrash && setPreviewModalFile(file)}
+          className="w-9 h-9 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06] flex items-center justify-center cursor-pointer"
+        >
           {getCategoryIcon(file.category)}
         </div>
 
@@ -95,9 +105,12 @@ export const FileCard = ({ file }) => {
           {!isTrash && (
             <button
               onClick={() => toggleFavorite(file.id)}
-              className={`p-1 rounded-lg text-zinc-300 dark:text-zinc-600 hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer ${
-                file.isFavorite ? 'text-amber-500 dark:text-amber-400' : 'opacity-0 group-hover:opacity-100'
+              className={`p-1 rounded-lg transition-colors cursor-pointer ${
+                file.isFavorite
+                  ? 'text-[#721C24] dark:text-[#9F2D3B]'
+                  : 'text-zinc-300 dark:text-zinc-600 hover:text-[#721C24] dark:hover:text-[#9F2D3B] opacity-0 group-hover:opacity-100'
               }`}
+              title={file.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
             >
               <Star className="w-3.5 h-3.5 fill-current" />
             </button>
@@ -117,9 +130,9 @@ export const FileCard = ({ file }) => {
       {/* Middle row: File name */}
       <div className="my-3">
         <h4
-          onClick={() => !isTrash && downloadFile(file)}
-          className="text-xs font-medium text-zinc-900 dark:text-zinc-100 hover:text-[#721C24] dark:hover:text-[#9F2D3B] truncate cursor-pointer"
-          title={file.name}
+          onClick={() => !isTrash && setPreviewModalFile(file)}
+          className="text-xs font-medium text-zinc-900 dark:text-zinc-100 hover:text-[#721C24] dark:hover:text-[#9F2D3B] truncate cursor-pointer transition-colors"
+          title={`Preview "${file.name}"`}
         >
           {file.name}
         </h4>

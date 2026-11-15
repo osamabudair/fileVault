@@ -22,7 +22,7 @@ export const Sidebar = ({ className = '' }) => {
   ];
 
   return (
-    <aside className={`w-64 h-screen bg-white/75 dark:bg-[#181B20]/70 backdrop-blur-md border-r border-white/60 dark:border-white/[0.08] shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col justify-between select-none p-4 transition-colors duration-150 ${className}`}>
+    <aside className={`w-64 h-screen shrink-0 bg-white/95 dark:bg-[#181B20]/95 border-r border-black/[0.06] dark:border-white/[0.08] shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col justify-between select-none p-4 ${className}`}>
       {/* Top: Logo & Navigation */}
       <div className="space-y-6">
         {/* Workspace Logo */}
@@ -53,7 +53,7 @@ export const Sidebar = ({ className = '' }) => {
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors duration-150 cursor-pointer ${
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors duration-100 cursor-pointer ${
                     isActive
                       ? 'bg-black/[0.06] dark:bg-white/[0.08] text-zinc-900 dark:text-zinc-100 font-semibold shadow-xs'
                       : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-black/[0.02] dark:hover:bg-white/[0.03]'

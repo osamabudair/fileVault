@@ -14,6 +14,7 @@ export const FileProvider = ({ children }) => {
   // Modals
   const [shareModalFile, setShareModalFile] = useState(null);
   const [deleteModalFile, setDeleteModalFile] = useState(null);
+  const [previewModalFile, setPreviewModalFile] = useState(null);
 
   // Toast
   const [toast, setToast] = useState(null);
@@ -155,6 +156,8 @@ export const FileProvider = ({ children }) => {
         setShareModalFile,
         deleteModalFile,
         setDeleteModalFile,
+        previewModalFile,
+        setPreviewModalFile,
         toast,
         showToast
       }}

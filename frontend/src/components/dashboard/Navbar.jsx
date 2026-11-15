@@ -23,7 +23,7 @@ export const Navbar = () => {
   };
 
   return (
-    <header className="sticky top-0 z-20 w-full bg-white/70 dark:bg-[#181B20]/70 backdrop-blur-md border-b border-white/60 dark:border-white/[0.08] shadow-[0_4px_20px_rgba(0,0,0,0.02)] px-6 py-3 transition-colors duration-150">
+    <header className="w-full shrink-0 bg-white/95 dark:bg-[#181B20]/95 border-b border-black/[0.06] dark:border-white/[0.08] px-6 py-3">
       <input
         ref={fileInputRef}
         type="file"
@@ -44,7 +44,7 @@ export const Navbar = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search files..."
-            className="w-full h-8.5 rounded-xl bg-white/50 focus:bg-white/80 dark:bg-white/[0.04] dark:focus:bg-[#181B20] border border-black/10 dark:border-white/[0.08] pl-9 pr-8 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#721C24]/30 dark:focus:ring-[#9F2D3B]/40 transition-colors"
+            className="w-full h-8.5 rounded-xl bg-black/[0.03] focus:bg-white dark:bg-white/[0.04] dark:focus:bg-[#181B20] border border-black/10 dark:border-white/[0.08] pl-9 pr-8 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#721C24]/30 dark:focus:ring-[#9F2D3B]/40 transition-colors"
           />
 
           {searchQuery && (
