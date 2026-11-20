@@ -8,6 +8,8 @@ backend/target/
 backend/.mvn/
 backend/*.jar
 backend/*.war
+backend/uploads/
+uploads/
 
 # IDE & OS files
 .vscode/
