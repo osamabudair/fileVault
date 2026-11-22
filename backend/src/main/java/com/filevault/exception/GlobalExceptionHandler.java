@@ -53,13 +53,16 @@ public class GlobalExceptionHandler {
         body.put("timestamp", Instant.now().toString());
         body.put("status", HttpStatus.UNAUTHORIZED.value());
         body.put("error", "Unauthorized");
-        body.put("message", "Invalid email or password.");
+        String message = (ex instanceof BadCredentialsException && ex.getMessage() != null && !ex.getMessage().equalsIgnoreCase("Bad credentials"))
+            ? ex.getMessage()
+            : "Invalid email or password.";
+        body.put("message", message);
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
     }
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, Object>> handleIllegalArgumentException(IllegalArgumentException ex) {
+    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
+    public ResponseEntity<Map<String, Object>> handleIllegalArgumentException(RuntimeException ex) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", Instant.now().toString());
         body.put("status", HttpStatus.BAD_REQUEST.value());
@@ -86,7 +89,7 @@ public class GlobalExceptionHandler {
         body.put("timestamp", Instant.now().toString());
         body.put("status", HttpStatus.FORBIDDEN.value());
         body.put("error", "Forbidden");
-        body.put("message", "You do not have permission to access or modify this resource.");
+        body.put("message", ex.getMessage() != null ? ex.getMessage() : "You do not have permission to access or modify this resource.");
 
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
     }

@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -29,6 +30,12 @@ public class FileResponse {
     private String contentType;
     private boolean favorite;
     private boolean trashed;
+    private boolean inVault;
+    private UUID folderId;
+    private String folderName;
+    private int sharedCount;
+    private boolean hasPublicLink;
+    private List<String> sharedWith;
     private Instant trashedAt;
     private Instant createdAt;
     private Instant updatedAt;
@@ -45,7 +52,21 @@ public class FileResponse {
         return trashed;
     }
 
+    @JsonProperty("isShared")
+    public boolean isSharedProperty() {
+        return hasPublicLink || sharedCount > 0;
+    }
+
     public static FileResponse fromEntity(FileMetadata entity) {
+        return fromEntity(entity, 0, false, List.of());
+    }
+
+    public static FileResponse fromEntity(
+        FileMetadata entity,
+        int sharedCount,
+        boolean hasPublicLink,
+        List<String> sharedWithNames
+    ) {
         String lowerCategory = entity.getCategory().name().toLowerCase(Locale.ROOT);
         String idStr = entity.getId().toString();
         return FileResponse.builder()
@@ -60,6 +81,12 @@ public class FileResponse {
             .contentType(entity.getContentType())
             .favorite(entity.isFavorite())
             .trashed(entity.isTrashed())
+            .inVault(entity.isInVault())
+            .folderId(entity.getFolder() != null ? entity.getFolder().getId() : null)
+            .folderName(entity.getFolder() != null ? entity.getFolder().getName() : null)
+            .sharedCount(sharedCount)
+            .hasPublicLink(hasPublicLink)
+            .sharedWith(sharedWithNames != null ? sharedWithNames : List.of())
             .trashedAt(entity.getTrashedAt())
             .createdAt(entity.getCreatedAt())
             .updatedAt(entity.getUpdatedAt())

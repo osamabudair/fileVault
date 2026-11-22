@@ -46,7 +46,7 @@ public class SecurityConfig {
                 })
             )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/v1/auth/**").permitAll()
+                .requestMatchers("/api/v1/auth/**", "/api/v1/public/share/**").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
@@ -70,7 +70,7 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of("http://localhost:5173", "http://127.0.0.1:5173"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Requested-With"));
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Requested-With", "X-Vault-Token"));
         config.setExposedHeaders(List.of("Set-Cookie", "Content-Disposition"));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);

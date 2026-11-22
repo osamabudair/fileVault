@@ -4,8 +4,11 @@ import com.filevault.dto.FileResponse;
 import com.filevault.dto.StorageSummaryResponse;
 import com.filevault.entity.FileCategory;
 import com.filevault.entity.FileMetadata;
+import com.filevault.entity.Folder;
 import com.filevault.entity.User;
+import com.filevault.repository.FileCollaboratorRepository;
 import com.filevault.repository.FileMetadataRepository;
+import com.filevault.repository.FileShareLinkRepository;
 import com.filevault.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,8 +35,13 @@ import java.util.UUID;
 public class FileService {
 
     private final FileMetadataRepository fileMetadataRepository;
+    private final FileShareLinkRepository fileShareLinkRepository;
+    private final FileCollaboratorRepository fileCollaboratorRepository;
     private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
+    private final FolderService folderService;
+    private final VaultService vaultService;
+    private final ShareService shareService;
 
     @Value("${file.storage.max-user-quota-bytes:53687091200}")
     private long maxUserQuotaBytes;
@@ -41,11 +49,21 @@ public class FileService {
     public record FileDownloadPayload(Resource resource, FileMetadata metadata) {}
 
     @Transactional
-    public FileResponse uploadFile(MultipartFile file) {
+    public FileResponse uploadFile(MultipartFile file, UUID folderId, String vaultToken) {
         User currentUser = getCurrentAuthenticatedUser();
 
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("Please select a non-empty file to upload.");
+        }
+
+        Folder targetFolder = null;
+        boolean uploadIntoVault = false;
+        if (folderId != null) {
+            targetFolder = folderService.getOwnedFolderOrThrow(folderId, currentUser);
+            if (targetFolder.isInVault()) {
+                vaultService.verifyVaultTokenOrThrow(vaultToken, currentUser);
+                uploadIntoVault = true;
+            }
         }
 
         long incomingSize = file.getSize();
@@ -71,28 +89,79 @@ public class FileService {
             .category(category)
             .favorite(false)
             .trashed(false)
+            .inVault(uploadIntoVault)
+            .folder(targetFolder)
             .owner(currentUser)
             .build();
 
         FileMetadata saved = fileMetadataRepository.saveAndFlush(metadata);
-        return FileResponse.fromEntity(saved);
+        return shareService.toEnrichedFileResponse(saved);
     }
 
     @Transactional(readOnly = true)
-    public List<FileResponse> listUserFiles(String view, String categoryParam, String search) {
+    public List<FileResponse> listUserFiles(String view, String categoryParam, String search, UUID folderId) {
         User currentUser = getCurrentAuthenticatedUser();
 
         String normalizedView = view != null ? view.trim().toLowerCase(Locale.ROOT) : "all";
+        if ("shared".equals(normalizedView)) {
+            return shareService.listFilesSharedWithCurrentUser();
+        }
+
         boolean trashed = "trash".equals(normalizedView);
         boolean favoriteOnly = "favorites".equals(normalizedView);
 
         FileCategory category = FileCategory.fromQueryParam(categoryParam);
         String sanitizedSearch = (search != null && !search.isBlank()) ? search.trim() : null;
 
-        return fileMetadataRepository.findUserFiles(currentUser, trashed, favoriteOnly, category, sanitizedSearch)
-            .stream()
-            .map(FileResponse::fromEntity)
+        List<FileMetadata> results;
+        if (folderId != null) {
+            Folder folder = folderService.getOwnedFolderOrThrow(folderId, currentUser);
+            if (folder.isInVault()) {
+                throw new AccessDeniedException("Use /api/v1/vault/files to browse Secret Vault folders.");
+            }
+            results = fileMetadataRepository.findUserFilesInFolder(currentUser, folder, category, sanitizedSearch);
+        } else {
+            boolean rootOnly = "all".equals(normalizedView) && sanitizedSearch == null && category == null;
+            results = fileMetadataRepository.findUserFiles(
+                currentUser,
+                trashed,
+                favoriteOnly,
+                rootOnly,
+                category,
+                sanitizedSearch
+            );
+        }
+
+        return results.stream()
+            .map(shareService::toEnrichedFileResponse)
             .toList();
+    }
+
+    @Transactional
+    public FileResponse moveFileToFolder(UUID fileId, UUID targetFolderId, String vaultToken) {
+        User currentUser = getCurrentAuthenticatedUser();
+        FileMetadata file = getOwnedFileOrThrow(fileId, currentUser);
+
+        if (file.isTrashed()) {
+            throw new IllegalArgumentException("Cannot move a file while it is in Trash.");
+        }
+        if (file.isInVault()) {
+            vaultService.verifyVaultTokenOrThrow(vaultToken, currentUser);
+        }
+
+        Folder targetFolder = null;
+        if (targetFolderId != null) {
+            targetFolder = folderService.getOwnedFolderOrThrow(targetFolderId, currentUser);
+            if (targetFolder.isInVault() != file.isInVault()) {
+                throw new IllegalArgumentException(
+                    "Cannot move a file across Secret Vault boundaries. Use the vault lock/unlock endpoints instead."
+                );
+            }
+        }
+
+        file.setFolder(targetFolder);
+        file.setUpdatedAt(Instant.now());
+        return shareService.toEnrichedFileResponse(fileMetadataRepository.save(file));
     }
 
     @Transactional(readOnly = true)
@@ -139,13 +208,13 @@ public class FileService {
         User currentUser = getCurrentAuthenticatedUser();
         FileMetadata file = getOwnedFileOrThrow(fileId, currentUser);
 
-        if (file.isTrashed()) {
-            throw new IllegalArgumentException("Cannot favorite a file while it is in Trash.");
+        if (file.isTrashed() || file.isInVault()) {
+            throw new IllegalArgumentException("Cannot favorite a file while it is in Trash or Secret Vault.");
         }
 
         file.setFavorite(!file.isFavorite());
         file.setUpdatedAt(Instant.now());
-        return FileResponse.fromEntity(fileMetadataRepository.save(file));
+        return shareService.toEnrichedFileResponse(fileMetadataRepository.save(file));
     }
 
     @Transactional
@@ -153,11 +222,20 @@ public class FileService {
         User currentUser = getCurrentAuthenticatedUser();
         FileMetadata file = getOwnedFileOrThrow(fileId, currentUser);
 
+        if (file.isInVault()) {
+            throw new IllegalArgumentException("Unlock the file from Secret Vault before moving it to Trash.");
+        }
+
+        fileShareLinkRepository.findByFile(file).ifPresent(link -> {
+            link.setActive(false);
+            fileShareLinkRepository.save(link);
+        });
+
         file.setTrashed(true);
         file.setTrashedAt(Instant.now());
         file.setFavorite(false);
         file.setUpdatedAt(Instant.now());
-        return FileResponse.fromEntity(fileMetadataRepository.save(file));
+        return shareService.toEnrichedFileResponse(fileMetadataRepository.save(file));
     }
 
     @Transactional
@@ -168,7 +246,7 @@ public class FileService {
         file.setTrashed(false);
         file.setTrashedAt(null);
         file.setUpdatedAt(Instant.now());
-        return FileResponse.fromEntity(fileMetadataRepository.save(file));
+        return shareService.toEnrichedFileResponse(fileMetadataRepository.save(file));
     }
 
     @Transactional
@@ -176,15 +254,33 @@ public class FileService {
         User currentUser = getCurrentAuthenticatedUser();
         FileMetadata file = getOwnedFileOrThrow(fileId, currentUser);
 
+        fileShareLinkRepository.deleteByFile(file);
+        fileCollaboratorRepository.deleteByFile(file);
         fileMetadataRepository.delete(file);
         fileStorageService.deletePhysicalFile(currentUser.getId(), file.getStoredName());
     }
 
     @Transactional(readOnly = true)
-    public FileDownloadPayload loadOwnedFileResource(UUID fileId) {
+    public FileDownloadPayload loadAccessibleFileResource(UUID fileId, String vaultToken) {
         User currentUser = getCurrentAuthenticatedUser();
-        FileMetadata file = getOwnedFileOrThrow(fileId, currentUser);
-        Resource resource = fileStorageService.loadFileAsResource(currentUser.getId(), file.getStoredName());
+        FileMetadata file = fileMetadataRepository.findById(fileId)
+            .orElseThrow(() -> new NoSuchElementException("File not found."));
+
+        boolean isOwner = file.getOwner().getId().equals(currentUser.getId());
+        if (isOwner) {
+            if (file.isInVault()) {
+                vaultService.verifyVaultTokenOrThrow(vaultToken, currentUser);
+            }
+        } else {
+            boolean isCollaborator = !file.isTrashed()
+                && !file.isInVault()
+                && fileCollaboratorRepository.existsByFileAndSharedWithUser(file, currentUser);
+            if (!isCollaborator) {
+                throw new AccessDeniedException("You do not have permission to access this file.");
+            }
+        }
+
+        Resource resource = fileStorageService.loadFileAsResource(file.getOwner().getId(), file.getStoredName());
         return new FileDownloadPayload(resource, file);
     }
 

@@ -15,6 +15,8 @@ import java.util.UUID;
 @Service
 public class JwtService {
 
+    private static final long VAULT_TOKEN_EXPIRATION_MS = 600_000L; // 10 minutes
+
     private final SecretKey signingKey;
     private final long accessTokenExpirationMs;
     private final long refreshTokenExpirationMs;
@@ -59,6 +61,21 @@ public class JwtService {
             .compact();
     }
 
+    public String generateVaultToken(String email, UUID userId) {
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + VAULT_TOKEN_EXPIRATION_MS);
+
+        return Jwts.builder()
+            .id(UUID.randomUUID().toString())
+            .subject(email)
+            .claim("uid", userId.toString())
+            .claim("type", "vault")
+            .issuedAt(now)
+            .expiration(expiry)
+            .signWith(signingKey)
+            .compact();
+    }
+
     public Claims parseClaims(String token) {
         return Jwts.parser()
             .verifyWith(signingKey)
@@ -76,6 +93,21 @@ public class JwtService {
             Claims claims = parseClaims(token);
             String tokenType = claims.get("type", String.class);
             return "access".equals(tokenType)
+                && expectedEmail.equalsIgnoreCase(claims.getSubject())
+                && claims.getExpiration().after(new Date());
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    public boolean isVaultTokenValid(String token, String expectedEmail) {
+        if (token == null || token.isBlank() || expectedEmail == null) {
+            return false;
+        }
+        try {
+            Claims claims = parseClaims(token.trim());
+            String tokenType = claims.get("type", String.class);
+            return "vault".equals(tokenType)
                 && expectedEmail.equalsIgnoreCase(claims.getSubject())
                 && claims.getExpiration().after(new Date());
         } catch (JwtException | IllegalArgumentException e) {

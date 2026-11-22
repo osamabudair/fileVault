@@ -12,7 +12,9 @@ import java.util.UUID;
 @Table(name = "file_metadata", indexes = {
     @Index(name = "idx_file_metadata_owner_trashed", columnList = "owner_id, trashed"),
     @Index(name = "idx_file_metadata_owner_category", columnList = "owner_id, category"),
-    @Index(name = "idx_file_metadata_owner_favorite", columnList = "owner_id, favorite")
+    @Index(name = "idx_file_metadata_owner_favorite", columnList = "owner_id, favorite"),
+    @Index(name = "idx_file_metadata_owner_vault", columnList = "owner_id, in_vault"),
+    @Index(name = "idx_file_metadata_folder", columnList = "folder_id")
 })
 @Getter
 @Setter
@@ -51,6 +53,14 @@ public class FileMetadata {
 
     @Column(name = "trashed_at")
     private Instant trashedAt;
+
+    @Column(name = "in_vault", nullable = false)
+    @Builder.Default
+    private boolean inVault = false;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "folder_id", foreignKey = @ForeignKey(name = "fk_file_metadata_folder"))
+    private Folder folder;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

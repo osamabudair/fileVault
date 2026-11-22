@@ -4,6 +4,7 @@ import com.filevault.dto.FileResponse;
 import com.filevault.dto.StorageSummaryResponse;
 import com.filevault.entity.FileMetadata;
 import com.filevault.service.FileService;
+import com.filevault.service.VaultService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
@@ -25,10 +26,15 @@ import java.util.UUID;
 public class FileController {
 
     private final FileService fileService;
+    private final VaultService vaultService;
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<FileResponse> uploadFile(@RequestParam("file") MultipartFile file) {
-        FileResponse uploaded = fileService.uploadFile(file);
+    public ResponseEntity<FileResponse> uploadFile(
+        @RequestParam("file") MultipartFile file,
+        @RequestParam(value = "folderId", required = false) UUID folderId,
+        @RequestHeader(value = "X-Vault-Token", required = false) String vaultToken
+    ) {
+        FileResponse uploaded = fileService.uploadFile(file, folderId, vaultToken);
         return ResponseEntity.status(HttpStatus.CREATED).body(uploaded);
     }
 
@@ -36,14 +42,38 @@ public class FileController {
     public ResponseEntity<List<FileResponse>> listFiles(
         @RequestParam(value = "view", defaultValue = "all") String view,
         @RequestParam(value = "category", required = false) String category,
-        @RequestParam(value = "search", required = false) String search
+        @RequestParam(value = "search", required = false) String search,
+        @RequestParam(value = "folderId", required = false) UUID folderId
     ) {
-        return ResponseEntity.ok(fileService.listUserFiles(view, category, search));
+        return ResponseEntity.ok(fileService.listUserFiles(view, category, search, folderId));
     }
 
     @GetMapping("/storage")
     public ResponseEntity<StorageSummaryResponse> getStorageSummary() {
         return ResponseEntity.ok(fileService.getStorageSummary());
+    }
+
+    @PatchMapping("/{id}/move")
+    public ResponseEntity<FileResponse> moveFileToFolder(
+        @PathVariable("id") UUID id,
+        @RequestBody(required = false) Map<String, UUID> body,
+        @RequestHeader(value = "X-Vault-Token", required = false) String vaultToken
+    ) {
+        UUID targetFolderId = (body != null) ? body.get("folderId") : null;
+        return ResponseEntity.ok(fileService.moveFileToFolder(id, targetFolderId, vaultToken));
+    }
+
+    @PatchMapping("/{id}/vault/lock")
+    public ResponseEntity<FileResponse> lockFileInVault(@PathVariable("id") UUID id) {
+        return ResponseEntity.ok(vaultService.lockFileInVault(id));
+    }
+
+    @PatchMapping("/{id}/vault/unlock")
+    public ResponseEntity<FileResponse> unlockFileFromVault(
+        @PathVariable("id") UUID id,
+        @RequestHeader(value = "X-Vault-Token", required = false) String vaultToken
+    ) {
+        return ResponseEntity.ok(vaultService.unlockFileFromVault(id, vaultToken));
     }
 
     @PatchMapping("/{id}/favorite")
@@ -68,8 +98,11 @@ public class FileController {
     }
 
     @GetMapping("/{id}/download")
-    public ResponseEntity<Resource> downloadFile(@PathVariable("id") UUID id) {
-        FileService.FileDownloadPayload payload = fileService.loadOwnedFileResource(id);
+    public ResponseEntity<Resource> downloadFile(
+        @PathVariable("id") UUID id,
+        @RequestHeader(value = "X-Vault-Token", required = false) String vaultToken
+    ) {
+        FileService.FileDownloadPayload payload = fileService.loadAccessibleFileResource(id, vaultToken);
         FileMetadata metadata = payload.metadata();
 
         String contentDisposition = ContentDisposition.attachment()
@@ -86,8 +119,11 @@ public class FileController {
     }
 
     @GetMapping("/{id}/preview")
-    public ResponseEntity<Resource> previewFile(@PathVariable("id") UUID id) {
-        FileService.FileDownloadPayload payload = fileService.loadOwnedFileResource(id);
+    public ResponseEntity<Resource> previewFile(
+        @PathVariable("id") UUID id,
+        @RequestHeader(value = "X-Vault-Token", required = false) String vaultToken
+    ) {
+        FileService.FileDownloadPayload payload = fileService.loadAccessibleFileResource(id, vaultToken);
         FileMetadata metadata = payload.metadata();
 
         String contentDisposition = ContentDisposition.inline()
