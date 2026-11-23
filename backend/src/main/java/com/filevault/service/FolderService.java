@@ -18,10 +18,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -86,6 +89,24 @@ public class FolderService {
                 fileMetadataRepository.countByOwnerAndFolderAndTrashedFalseAndInVaultFalse(currentUser, folder)
             ))
             .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<FolderResponse> getFolderBreadcrumbs(UUID folderId, String vaultToken) {
+        User currentUser = getCurrentAuthenticatedUser();
+        Folder current = getOwnedFolderOrThrow(folderId, currentUser);
+        if (current.isInVault()) {
+            verifyVaultTokenOrThrow(vaultToken, currentUser);
+        }
+
+        LinkedList<FolderResponse> breadcrumbs = new LinkedList<>();
+        Set<UUID> visited = new HashSet<>();
+        Folder cursor = current;
+        while (cursor != null && visited.add(cursor.getId())) {
+            breadcrumbs.addFirst(FolderResponse.fromEntity(cursor, countFolderItems(currentUser, cursor)));
+            cursor = cursor.getParent();
+        }
+        return breadcrumbs;
     }
 
     @Transactional

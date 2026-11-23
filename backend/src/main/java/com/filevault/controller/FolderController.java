@@ -35,6 +35,14 @@ public class FolderController {
         return ResponseEntity.ok(folderService.listFolders(parentId));
     }
 
+    @GetMapping("/{id}/breadcrumbs")
+    public ResponseEntity<List<FolderResponse>> getFolderBreadcrumbs(
+        @PathVariable("id") UUID id,
+        @RequestHeader(value = "X-Vault-Token", required = false) String vaultToken
+    ) {
+        return ResponseEntity.ok(folderService.getFolderBreadcrumbs(id, vaultToken));
+    }
+
     @PatchMapping("/{id}/rename")
     public ResponseEntity<FolderResponse> renameFolder(
         @PathVariable("id") UUID id,

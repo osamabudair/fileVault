@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
@@ -48,7 +49,11 @@ public class ShareService {
     }
 
     @Transactional
-    public ShareDetailsResponse createOrEnableShareLink(UUID fileId) {
+    public ShareDetailsResponse createOrEnableShareLink(UUID fileId, Integer expiresInHours) {
+        if (expiresInHours != null && (expiresInHours < 1 || expiresInHours > 8760)) {
+            throw new IllegalArgumentException("Link expiration must be between 1 and 8760 hours (1 year).");
+        }
+
         User currentUser = getCurrentAuthenticatedUser();
         FileMetadata file = getOwnedFileOrThrow(fileId, currentUser);
         validateFileShareable(file);
@@ -61,7 +66,8 @@ public class ShareService {
                 .build());
 
         shareLink.setActive(true);
-        fileShareLinkRepository.save(shareLink);
+        shareLink.setExpiresAt(expiresInHours != null ? Instant.now().plus(expiresInHours, ChronoUnit.HOURS) : null);
+        fileShareLinkRepository.saveAndFlush(shareLink);
 
         return buildShareDetailsResponse(file);
     }

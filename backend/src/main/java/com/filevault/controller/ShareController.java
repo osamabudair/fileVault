@@ -30,8 +30,12 @@ public class ShareController {
     }
 
     @PostMapping("/api/v1/files/{id}/share/link")
-    public ResponseEntity<ShareDetailsResponse> createOrEnableShareLink(@PathVariable("id") UUID id) {
-        return ResponseEntity.ok(shareService.createOrEnableShareLink(id));
+    public ResponseEntity<ShareDetailsResponse> createOrEnableShareLink(
+        @PathVariable("id") UUID id,
+        @RequestBody(required = false) ShareDetailsResponse.ShareLinkRequest request
+    ) {
+        Integer expiresInHours = (request != null) ? request.getExpiresInHours() : null;
+        return ResponseEntity.ok(shareService.createOrEnableShareLink(id, expiresInHours));
     }
 
     @DeleteMapping("/api/v1/files/{id}/share/link")

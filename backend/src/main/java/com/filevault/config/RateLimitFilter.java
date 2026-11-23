@@ -23,7 +23,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private static final int MAX_PUBLIC_SHARE_REQUESTS_PER_MINUTE = 30;
     private static final long WINDOW_DURATION_SECONDS = 60L;
 
-    private final Map<String, RateWindow> clientBuckets = new ConcurrentHashMap<>();
+    private final Map<String, RateWindow> authBuckets = new ConcurrentHashMap<>();
+    private final Map<String, RateWindow> publicShareBuckets = new ConcurrentHashMap<>();
 
     @Override
     protected void doFilterInternal(
@@ -37,7 +38,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         String clientIp = request.getRemoteAddr();
 
         if (isRateLimitedAuthEndpoint(path) && "POST".equalsIgnoreCase(method)) {
-            if (!allowRequest("auth:" + clientIp, MAX_AUTH_REQUESTS_PER_MINUTE)) {
+            if (!allowRequest(authBuckets, clientIp, MAX_AUTH_REQUESTS_PER_MINUTE)) {
                 writeRateLimitResponse(
                     response,
                     "Too many authentication attempts. Please wait a minute and try again."
@@ -45,7 +46,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 return;
             }
         } else if (isRateLimitedPublicShareEndpoint(path) && "GET".equalsIgnoreCase(method)) {
-            if (!allowRequest("share:" + clientIp, MAX_PUBLIC_SHARE_REQUESTS_PER_MINUTE)) {
+            if (!allowRequest(publicShareBuckets, clientIp, MAX_PUBLIC_SHARE_REQUESTS_PER_MINUTE)) {
                 writeRateLimitResponse(
                     response,
                     "Too many public share requests. Please wait a minute and try again."
@@ -69,14 +70,14 @@ public class RateLimitFilter extends OncePerRequestFilter {
         return path != null && path.contains("/api/v1/public/share/");
     }
 
-    private boolean allowRequest(String bucketKey, int maxRequestsPerMinute) {
+    private boolean allowRequest(Map<String, RateWindow> buckets, String clientIp, int maxRequestsPerMinute) {
         long now = Instant.now().getEpochSecond();
-        if (clientBuckets.size() > 10000) {
-            clientBuckets.entrySet().removeIf(
+        if (buckets.size() > 10000) {
+            buckets.entrySet().removeIf(
                 entry -> now - entry.getValue().windowStartEpochSec() >= WINDOW_DURATION_SECONDS
             );
         }
-        RateWindow window = clientBuckets.compute(bucketKey, (key, existing) -> {
+        RateWindow window = buckets.compute(clientIp, (key, existing) -> {
             if (existing == null || now - existing.windowStartEpochSec() >= WINDOW_DURATION_SECONDS) {
                 return new RateWindow(now, new AtomicInteger(1));
             }

@@ -42,6 +42,14 @@ public class ShareDetailsResponse {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
+    public static class ShareLinkRequest {
+        private Integer expiresInHours;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class InviteRequest {
         @NotBlank(message = "Collaborator email is required")
         @Email(message = "Please enter a valid email address")
